@@ -134,7 +134,22 @@ Traditional DNS sends queries as plain text over UDP port 53. Anyone on the netw
 
 Most modern browsers enable DoH by default. This is why you might visit `facebook.com` but not see it in `dnsw`. The browser asked a DoH server directly, bypassing your router's DNS entirely.
 
-To see all DNS traffic, you need to disable DoH in your browser settings (see the [README](../README.md#dns-over-https) for instructions per browser).
+To see all DNS traffic, disable DoH in your browser:
+
+**Chrome / Brave / Edge:**
+1. Go to `chrome://settings/security` (or `brave://settings/security`, `edge://settings/privacy`)
+2. Find **"Use secure DNS"**
+3. Turn it **off**
+
+**Firefox:**
+1. Go to `about:preferences#general`
+2. Scroll to **Network Settings**, click **Settings**
+3. Uncheck **"Enable DNS over HTTPS"**
+
+**Safari:**
+Safari uses the system DNS settings by default and does not enable DoH. It works out of the box.
+
+After disabling DoH, all browser DNS queries go through standard UDP port 53 and will show up in `dnsw`.
 
 ## Filtered domains
 

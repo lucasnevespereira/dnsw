@@ -29,7 +29,6 @@ TIME        DEVICE                CATEGORY      DOMAIN
 - [Proxy mode (all devices)](#proxy-mode)
 - [Device identification](#device-identification)
 - [Categories](#categories)
-- [DNS-over-HTTPS](#dns-over-https)
 - [How it works](#how-it-works)
 - [Docs](#docs)
 - [License](#license)
@@ -158,36 +157,11 @@ Domains are auto-categorized with icons:
 | `⊡ CLOUD`    | Cloud infra     | Cloudflare, AWS, Akamai             |
 | `· OTHER`    | Everything else |                                     |
 
-## DNS-over-HTTPS
-
-Modern browsers use **DNS-over-HTTPS (DoH)**, which encrypts DNS queries inside regular HTTPS traffic. When DoH is active, DNS lookups bypass UDP port 53, so `dnsw` can't see them.
-
-To see all DNS traffic, disable DoH in your browser:
-
-**Chrome / Brave / Edge:**
-1. Go to `chrome://settings/security` (or `brave://settings/security`, `edge://settings/privacy`)
-2. Find **"Use secure DNS"**
-3. Turn it **off**
-
-**Firefox:**
-1. Go to `about:preferences#general`
-2. Scroll to **Network Settings**, click **Settings**
-3. Uncheck **"Enable DNS over HTTPS"**
-
-**Safari:**
-Safari uses the system DNS settings by default and does not enable DoH. It works out of the box.
-
-> After disabling DoH, all browser DNS queries go through standard UDP port 53 and will show up in `dnsw`.
-
 ## How it works
 
-`dnsw` listens on your network interface for UDP port 53 (standard DNS) traffic, parses the DNS query packets, and displays them in a formatted table.
+`dnsw` captures DNS queries (UDP port 53) on your network, identifies devices, categorizes domains, and displays everything in real time. Duplicate queries are merged and internal lookups (`.local`, `.arpa`) are filtered out.
 
-- Only DNS queries are shown (not responses)
-- `.local` and `.arpa` domains are filtered out (internal network lookups)
-- Devices are identified via config file, reverse DNS, or MAC vendor lookup
-- New devices are announced when first seen
-- Duplicate queries from the same device within 2 seconds are merged into one line
+> **Not seeing some websites?** Modern browsers use DNS-over-HTTPS (DoH) which bypasses standard DNS. See [docs/network.md](docs/network.md#why-some-domains-dont-show-up-dns-over-https) for how to disable it.
 
 ## Docs
 
