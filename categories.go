@@ -64,9 +64,11 @@ var domainCategories = []struct {
 	{[]string{"github.com", "githubusercontent.com", "gitlab.com"}, category{"◎ DEV     ", green}},
 	{[]string{"stackoverflow.com", "stackexchange.com"}, category{"◎ DEV     ", green}},
 	{[]string{"npmjs.org", "npmjs.com", "yarnpkg.com"}, category{"◎ DEV     ", green}},
+	{[]string{"jetbrains.com"}, category{"◎ DEV     ", green}},
+	{[]string{"anthropic.com", "claude.ai", "openai.com", "chatgpt.com"}, category{"◎ AI      ", green}},
 
 	// Communication
-	{[]string{"discord.com", "discordapp.com"}, category{"◎ COMM    ", blue}},
+	{[]string{"discord.com", "discordapp.com", "discord.gg", "discord.media"}, category{"◎ COMM    ", blue}},
 	{[]string{"whatsapp.com", "whatsapp.net"}, category{"◎ COMM    ", blue}},
 	{[]string{"slack.com", "slack-edge.com"}, category{"◎ COMM    ", blue}},
 	{[]string{"telegram.org", "t.me"}, category{"◎ COMM    ", blue}},

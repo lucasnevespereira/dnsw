@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"fmt"
 	"strings"
 	"time"
 
@@ -38,13 +37,6 @@ const (
 	// DNS pointer is 2 bytes: the pointer marker byte + the offset byte.
 	dnsPointerSize = 2
 )
-
-// DNS query types , each one asks for a different kind of record.
-// A = IPv4 address, AAAA = IPv6 address, HTTPS = modern secure connection info, etc.
-var queryTypes = map[uint16]string{
-	1: "A", 2: "NS", 5: "CNAME", 6: "SOA", 12: "PTR", 15: "MX",
-	16: "TXT", 28: "AAAA", 33: "SRV", 65: "HTTPS", 255: "ANY",
-}
 
 // parseDNSQuery extracts the domain name and query type from raw DNS packet bytes.
 // DNS encodes domain names as length-prefixed labels:
@@ -94,7 +86,7 @@ func parseDNSQuery(data []byte) (domain string, queryType uint16) {
 }
 
 // handlePacket processes a single captured network packet.
-// It extracts the source IP, checks it's a DNS query, parses it, and prints it.
+// It extracts the source IP and MAC, checks it's a DNS query, parses it, and prints it.
 func handlePacket(packet gopacket.Packet, noDedupe bool) {
 	var srcIP string
 
@@ -107,6 +99,14 @@ func handlePacket(packet gopacket.Packet, noDedupe bool) {
 		srcIP = ip.SrcIP.String()
 	} else {
 		return
+	}
+
+	// Extract source MAC address from the Ethernet frame.
+	// This identifies the physical device that sent the packet.
+	var srcMAC string
+	if ethLayer := packet.Layer(layers.LayerTypeEthernet); ethLayer != nil {
+		eth, _ := ethLayer.(*layers.Ethernet)
+		srcMAC = eth.SrcMAC.String()
 	}
 
 	// Extract the UDP layer. DNS runs over UDP (User Datagram Protocol).
@@ -135,7 +135,7 @@ func handlePacket(packet gopacket.Packet, noDedupe bool) {
 		return
 	}
 
-	domain, qt := parseDNSQuery(payload)
+	domain, _ := parseDNSQuery(payload)
 
 	// Filter out internal/noise domains:
 	// .local = mDNS (devices discovering each other on LAN)
@@ -144,12 +144,16 @@ func handlePacket(packet gopacket.Packet, noDedupe bool) {
 		return
 	}
 
-	qtStr, ok := queryTypes[qt]
-	if !ok {
-		qtStr = fmt.Sprintf("%d", qt)
+	// Register MAC before resolving so OUI lookup can use it.
+	if srcMAC != "" {
+		registerMAC(srcIP, srcMAC)
 	}
 
-	device := resolveDevice(srcIP)
+	device, isNew := resolveDevice(srcIP)
+
+	if isNew {
+		printNewDevice(device, srcIP, srcMAC)
+	}
 
 	// Skip duplicate queries from the same device within a short window.
 	if !noDedupe && isDuplicate(device, domain) {
@@ -159,5 +163,5 @@ func handlePacket(packet gopacket.Packet, noDedupe bool) {
 	cat := categorize(domain)
 	now := time.Now().Format("15:04:05")
 
-	printQuery(now, device, qtStr, cat, domain)
+	printQuery(now, device, cat, domain)
 }

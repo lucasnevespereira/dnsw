@@ -12,6 +12,8 @@ func main() {
 	noDedupe := flag.Bool("no-dedupe", false, "Show all DNS queries (don't merge duplicates)")
 	flag.Parse()
 
+	loadDeviceNames()
+
 	if *list {
 		listInterfaces()
 		os.Exit(0)

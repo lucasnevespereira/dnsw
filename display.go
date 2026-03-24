@@ -33,11 +33,25 @@ func printBanner(iface string) {
 	fmt.Printf("  Mode      : promiscuous, capturing ALL devices on LAN\n")
 	fmt.Printf("  Press     : %sCtrl+C%s to stop\n", bold, reset)
 	fmt.Printf("%s────────────────────────────────────────────────────%s\n\n", gray, reset)
-	fmt.Printf("%s%-10s  %-20s  %-6s  %-12s  %s%s\n", gray, "TIME", "DEVICE", "TYPE", "CATEGORY", "DOMAIN", reset)
-	fmt.Printf("%s%s%s\n", gray, strings.Repeat("─", 78), reset)
+	fmt.Printf("%s%-10s  %-20s  %-12s  %s%s\n", gray, "TIME", "DEVICE", "CATEGORY", "DOMAIN", reset)
+	fmt.Printf("%s%s%s\n", gray, strings.Repeat("─", 72), reset)
 }
 
-func printQuery(timestamp, device, queryType string, cat category, domain string) {
+// printNewDevice prints a highlighted notice when a device appears for the first time.
+func printNewDevice(name, ip, mac string) {
+	macInfo := ""
+	if mac != "" {
+		macInfo = fmt.Sprintf("  %sMAC%s  %s", gray, reset, strings.ToUpper(mac))
+	}
+	fmt.Printf("\n  %s%s★ new device%s  %s%s%s  %sIP%s %s%s\n\n",
+		bold, green, reset,
+		bold, name, reset,
+		gray, reset, ip,
+		macInfo,
+	)
+}
+
+func printQuery(timestamp, device string, cat category, domain string) {
 	displayDomain := domain
 	if len(displayDomain) > maxDomainDisplay {
 		displayDomain = displayDomain[:maxDomainDisplay-3] + "..."
@@ -47,10 +61,9 @@ func printQuery(timestamp, device, queryType string, cat category, domain string
 		displayDevice = displayDevice[:maxDeviceDisplay-3] + "..."
 	}
 
-	fmt.Printf("%s%-10s%s  %-20s  %s%-6s%s  %s%s%s  %s%s%s\n",
+	fmt.Printf("%s%-10s%s  %-20s  %s%s%s  %s%s%s\n",
 		gray, timestamp, reset,
 		displayDevice,
-		bold, queryType, reset,
 		cat.color, cat.label, reset,
 		white, displayDomain, reset,
 	)

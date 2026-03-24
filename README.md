@@ -10,13 +10,13 @@ DNS WATCHER
   Press     : Ctrl+C to stop
 ────────────────────────────────────────────────────
 
-TIME        DEVICE                TYPE    CATEGORY      DOMAIN
-──────────────────────────────────────────────────────────────────────────────
-22:50:21    my-macbook             A       ◈ SOCIAL    facebook.com
-22:50:22    192.168.1.45           A       ♪ MUSIC     spclient.spotify.com
-22:50:24    my-macbook             A       ◎ DEV       github.com
-22:50:30    living-room-tv         A       ▶ VIDEO     netflix.com
-22:50:42    192.168.1.45           A       ◈ SOCIAL    instagram.com
+TIME        DEVICE                CATEGORY      DOMAIN
+────────────────────────────────────────────────────────────────────────
+22:50:21    My MacBook            ◈ SOCIAL      facebook.com
+22:50:22    iPhone                ♪ MUSIC       spclient.spotify.com
+22:50:24    My MacBook            ◎ DEV         github.com
+22:50:30    Living Room TV        ▶ VIDEO       netflix.com
+22:50:42    iPhone                ◈ SOCIAL      instagram.com
 ```
 
 Domains are auto-categorized with icons:
@@ -29,7 +29,8 @@ Domains are auto-categorized with icons:
 | `⌕ SEARCH`   | Search engines  | Google, Bing                        |
 | `⊞ SHOP`     | Shopping        | Amazon, eBay                        |
 | `◎ COMM`     | Communication   | Discord, WhatsApp, Slack, Zoom      |
-| `◎ DEV`      | Development     | GitHub, GitLab, StackOverflow       |
+| `◎ DEV`      | Development     | GitHub, GitLab, JetBrains           |
+| `◎ AI`       | AI              | Claude, ChatGPT                     |
 | `⚔ GAMING`  | Gaming          | Steam, Epic, PlayStation, Xbox      |
 | `✗ ADS/TRCK` | Ads & trackers  | DoubleClick, Google Ads             |
 | `◉ APPLE`    | Apple services  | iCloud, App Store                   |
@@ -65,7 +66,7 @@ go build -o dnsw .
 
 ```bash
 # Start watching DNS (auto-detects your network interface)
-./dnsw
+sudo ./dnsw
 ```
 
 That's it. `sudo` is required to capture packets in promiscuous mode (seeing all devices, not just yours).
@@ -95,6 +96,36 @@ Then specify it with `-i`:
 ```bash
 ./dnsw -i en1
 ```
+
+### Device identification
+
+`dnsw` automatically identifies devices on your network using three methods (in order):
+
+1. **Your names** from `~/.config/dnsw/devices.json` (highest priority)
+2. **Reverse DNS** (hostnames assigned by your router)
+3. **MAC vendor detection** (reads the device manufacturer from its network address)
+
+When a new device appears, you'll see a notice:
+
+```
+  ★ new device  Apple-1  IP 192.168.1.73  MAC AC:DE:48:00:11:22
+```
+
+Devices are auto-named by manufacturer: `Apple-1`, `Samsung-2`, `Google-3`, etc. This covers most phones, tablets, smart TVs, game consoles, and IoT devices.
+
+To give devices custom names, edit `~/.config/dnsw/devices.json` (created automatically on first run):
+
+```json
+{
+  "192.168.1.32": "My MacBook",
+  "192.168.1.45": "iPhone",
+  "192.168.1.50": "Living Room TV"
+}
+```
+
+> **Tip**: watch the new device notices to see which IPs appear, then map them in the config.
+
+> **Note**: modern phones (iOS 14+, Android 10+) use randomized MAC addresses by default. These won't match any known vendor, so they'll show as the raw IP unless you name them in `devices.json`.
 
 ## Why can't I see some websites?
 
@@ -128,11 +159,12 @@ macOS itself does not use DoH by default. System-level DNS (like `curl` in termi
 
 - Only **DNS queries** are shown (not responses)
 - `.local` and `.arpa` domains are filtered out (internal network lookups)
-- Device IPs are resolved to hostnames via reverse DNS when available
+- Devices are identified via config file, reverse DNS, or MAC vendor lookup
+- New devices are announced when first seen on the network
 - Duplicate queries from the same device within 2 seconds are merged into one line
 
 For a beginner-friendly explanation of the networking concepts used in this project, see [NETWORK.md](NETWORK.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)
