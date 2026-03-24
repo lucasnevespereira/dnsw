@@ -33,7 +33,7 @@ A network interface is how your computer connects to a network. Each one has a n
 | `wlan0` | Wi-Fi on Linux |
 | `lo0` / `lo` | Loopback (your machine talking to itself) |
 
-When you run `dnsw -i en0`, you're telling it to listen on your Wi-Fi adapter.
+When you run `dnsw watch -i en0`, you're telling it to listen on your Wi-Fi adapter.
 
 ## What is promiscuous mode?
 
@@ -134,7 +134,7 @@ Traditional DNS sends queries as plain text over UDP port 53. Anyone on the netw
 
 Most modern browsers enable DoH by default. This is why you might visit `facebook.com` but not see it in `dnsw`. The browser asked a DoH server directly, bypassing your router's DNS entirely.
 
-To see all DNS traffic, you need to disable DoH in your browser settings (see the README for instructions per browser).
+To see all DNS traffic, you need to disable DoH in your browser settings (see the [README](../README.md#dns-over-https) for instructions per browser).
 
 ## Filtered domains
 

@@ -18,6 +18,7 @@ func main() {
 
 	root.AddCommand(
 		watchCmd(),
+		proxyCmd(),
 		devicesCmd(),
 		configCmd(),
 		interfacesCmd(),

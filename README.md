@@ -21,24 +21,18 @@ TIME        DEVICE                CATEGORY      DOMAIN
 22:50:42    My MacBook            ◈ SOCIAL      instagram.com
 ```
 
-Domains are auto-categorized with icons:
+## Table of contents
 
-| Icon         | Category        | Examples                            |
-| ------------ | --------------- | ----------------------------------- |
-| `▶ VIDEO`   | Streaming       | YouTube, Netflix, Twitch, Disney+   |
-| `♪ MUSIC`    | Music           | Spotify, Deezer, SoundCloud         |
-| `◈ SOCIAL`   | Social media    | Facebook, Instagram, TikTok, Reddit |
-| `⌕ SEARCH`   | Search engines  | Google, Bing                        |
-| `⊞ SHOP`     | Shopping        | Amazon, eBay                        |
-| `◎ COMM`     | Communication   | Discord, WhatsApp, Slack, Zoom      |
-| `◎ DEV`      | Development     | GitHub, GitLab, JetBrains           |
-| `◎ AI`       | AI              | Claude, ChatGPT                     |
-| `⚔ GAMING`  | Gaming          | Steam, Epic, PlayStation, Xbox      |
-| `✗ ADS/TRCK` | Ads & trackers  | DoubleClick, Google Ads             |
-| `◉ APPLE`    | Apple services  | iCloud, App Store                   |
-| `◉ MSFT`     | Microsoft       | Office, Windows Update              |
-| `⊡ CLOUD`    | Cloud infra     | Cloudflare, AWS, Akamai             |
-| `· OTHER`    | Everything else |                                     |
+- [Install](#install)
+- [Usage](#usage)
+- [Commands](#commands)
+- [Proxy mode (all devices)](#proxy-mode)
+- [Device identification](#device-identification)
+- [Categories](#categories)
+- [DNS-over-HTTPS](#dns-over-https)
+- [How it works](#how-it-works)
+- [Docs](#docs)
+- [License](#license)
 
 ## Install
 
@@ -81,6 +75,9 @@ dnsw watch                   # same as above
 dnsw watch -i en0            # use a specific network interface
 dnsw watch --no-dedupe       # show all DNS packets without merging
 
+dnsw proxy                   # run a DNS proxy to see ALL devices on your network
+dnsw proxy --upstream 1.1.1.1  # use a custom upstream DNS server
+
 dnsw devices list            # show all named devices
 dnsw devices set <ip> <name> # name a device
 dnsw devices remove <ip>     # remove a device name
@@ -89,7 +86,31 @@ dnsw interfaces              # list available network interfaces
 dnsw config                  # show config file path and contents
 ```
 
-### Device identification
+## Proxy mode
+
+On Wi-Fi, `dnsw watch` can only see DNS queries from the machine it runs on. Wi-Fi encrypts each device's traffic separately, so your computer can't see packets from your phone or TV.
+
+`dnsw proxy` solves this by turning your Mac into a DNS server. All devices on the network send their DNS queries through your machine, so you see everything:
+
+```
+DNS WATCHER (proxy mode)
+────────────────────────────────────────────────────────
+  DNS proxy  : 192.168.1.32:53
+  Upstream   : 8.8.8.8:53
+────────────────────────────────────────────────────────
+
+  ★ new device  Apple-1  IP 192.168.1.73
+
+23:15:01    Apple-1               ◈ SOCIAL      facebook.com
+23:15:03    Apple-1               ♪ MUSIC       spclient.spotify.com
+23:15:05    Samsung-1             ▶ VIDEO       youtube.com
+```
+
+To use proxy mode, you need to point your router's DNS to your Mac's IP. This takes about 2 minutes. See the [Router Setup Guide](docs/router-setup.md) for step-by-step instructions.
+
+**Safe to stop at any time.** Set `8.8.8.8` as the secondary DNS in your router, and internet keeps working even when `dnsw proxy` is not running.
+
+## Device identification
 
 `dnsw` identifies devices using three methods (in order):
 
@@ -116,55 +137,62 @@ Or edit `~/.config/dnsw/devices.json` directly.
 
 > **Note**: modern phones (iOS 14+, Android 10+) use randomized MAC addresses by default. These won't match any known vendor, so they'll show as the raw IP unless you name them with `dnsw devices set`.
 
-## Wi-Fi limitation
+## Categories
 
-On **Wi-Fi**, `dnsw` can only see DNS queries from the machine it's running on. This is because Wi-Fi encrypts each device's traffic separately, so your computer physically can't see packets from your phone or TV.
+Domains are auto-categorized with icons:
 
-On a **wired network** (Ethernet), promiscuous mode can capture traffic from other devices on the same network segment.
+| Icon         | Category        | Examples                            |
+| ------------ | --------------- | ----------------------------------- |
+| `▶ VIDEO`   | Streaming       | YouTube, Netflix, Twitch, Disney+   |
+| `♪ MUSIC`    | Music           | Spotify, Deezer, SoundCloud         |
+| `◈ SOCIAL`   | Social media    | Facebook, Instagram, TikTok, Reddit |
+| `⌕ SEARCH`   | Search engines  | Google, Bing                        |
+| `⊞ SHOP`     | Shopping        | Amazon, eBay                        |
+| `◎ COMM`     | Communication   | Discord, WhatsApp, Slack, Zoom      |
+| `◎ DEV`      | Development     | GitHub, GitLab, JetBrains           |
+| `◎ AI`       | AI              | Claude, ChatGPT                     |
+| `⚔ GAMING`  | Gaming          | Steam, Epic, PlayStation, Xbox      |
+| `✗ ADS/TRCK` | Ads & trackers  | DoubleClick, Google Ads             |
+| `◉ APPLE`    | Apple services  | iCloud, App Store                   |
+| `◉ MSFT`     | Microsoft       | Office, Windows Update              |
+| `⊡ CLOUD`    | Cloud infra     | Cloudflare, AWS, Akamai             |
+| `· OTHER`    | Everything else |                                     |
 
-To see DNS queries from **all** devices on your network, you have a few options:
+## DNS-over-HTTPS
 
-- **Router DNS logs**: some routers (OpenWrt, pfSense, UniFi) can show DNS query logs directly
-- **Pi-hole**: runs as your network's DNS server and logs all queries with a web dashboard
-- **Run dnsw on your router**: if your router runs Linux (e.g. OpenWrt), you can run `dnsw` there where it can see all DNS traffic
+Modern browsers use **DNS-over-HTTPS (DoH)**, which encrypts DNS queries inside regular HTTPS traffic. When DoH is active, DNS lookups bypass UDP port 53, so `dnsw` can't see them.
 
-## Why can't I see some websites?
-
-Modern browsers use **DNS-over-HTTPS (DoH)**, which encrypts DNS queries inside regular HTTPS traffic. When DoH is active, DNS lookups bypass the standard UDP port 53, so `dnsw` can't see them.
-
-### How to disable DoH to see all DNS traffic
+To see all DNS traffic, disable DoH in your browser:
 
 **Chrome / Brave / Edge:**
-
 1. Go to `chrome://settings/security` (or `brave://settings/security`, `edge://settings/privacy`)
 2. Find **"Use secure DNS"**
 3. Turn it **off**
 
 **Firefox:**
-
 1. Go to `about:preferences#general`
 2. Scroll to **Network Settings**, click **Settings**
 3. Uncheck **"Enable DNS over HTTPS"**
 
 **Safari:**
-Safari uses the system DNS settings by default and does **not** enable DoH, so it should work out of the box.
-
-**macOS system-wide:**
-macOS itself does not use DoH by default. System-level DNS (like `curl` in terminal) will appear in `dnsw` without any changes.
+Safari uses the system DNS settings by default and does not enable DoH. It works out of the box.
 
 > After disabling DoH, all browser DNS queries go through standard UDP port 53 and will show up in `dnsw`.
 
 ## How it works
 
-`dnsw` listens on your network interface for **UDP port 53** (standard DNS) traffic, parses the DNS query packets, and displays them in a formatted table.
+`dnsw` listens on your network interface for UDP port 53 (standard DNS) traffic, parses the DNS query packets, and displays them in a formatted table.
 
-- Only **DNS queries** are shown (not responses)
+- Only DNS queries are shown (not responses)
 - `.local` and `.arpa` domains are filtered out (internal network lookups)
 - Devices are identified via config file, reverse DNS, or MAC vendor lookup
 - New devices are announced when first seen
 - Duplicate queries from the same device within 2 seconds are merged into one line
 
-For a beginner-friendly explanation of the networking concepts used in this project, see [NETWORK.md](NETWORK.md).
+## Docs
+
+- [Network Concepts](docs/network.md) - beginner-friendly explanation of DNS, packets, and how `dnsw` works under the hood
+- [Router Setup Guide](docs/router-setup.md) - step-by-step instructions to configure your router for proxy mode
 
 ## License
 
