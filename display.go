@@ -26,13 +26,17 @@ const (
 	maxDeviceDisplay = 18
 )
 
-func printBanner(iface string) {
+func printBanner(iface string, isWifi bool) {
 	fmt.Printf("\n%s%s DNS WATCHER%s\n", bold, cyan, reset)
-	fmt.Printf("%s────────────────────────────────────────────────────%s\n", gray, reset)
+	fmt.Printf("%s────────────────────────────────────────────────────────%s\n", gray, reset)
 	fmt.Printf("  Interface : %s%s%s\n", bold, iface, reset)
-	fmt.Printf("  Mode      : promiscuous, capturing ALL devices on LAN\n")
+	if isWifi {
+		fmt.Printf("  Mode      : Wi-Fi (captures this machine's DNS queries)\n")
+	} else {
+		fmt.Printf("  Mode      : promiscuous (captures all devices on LAN)\n")
+	}
 	fmt.Printf("  Press     : %sCtrl+C%s to stop\n", bold, reset)
-	fmt.Printf("%s────────────────────────────────────────────────────%s\n\n", gray, reset)
+	fmt.Printf("%s────────────────────────────────────────────────────────%s\n\n", gray, reset)
 	fmt.Printf("%s%-10s  %-20s  %-12s  %s%s\n", gray, "TIME", "DEVICE", "CATEGORY", "DOMAIN", reset)
 	fmt.Printf("%s%s%s\n", gray, strings.Repeat("─", 72), reset)
 }

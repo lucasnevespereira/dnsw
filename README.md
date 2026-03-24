@@ -1,22 +1,24 @@
 # dnsw
 
-A real-time DNS watcher for your local network. See what every device on your home network is browsing, right from your terminal.
+A real-time DNS watcher for your local network. See what your devices are browsing, right from your terminal.
 
 ```
 DNS WATCHER
-────────────────────────────────────────────────────
+────────────────────────────────────────────────────────
   Interface : en0
-  Mode      : promiscuous, capturing ALL devices on LAN
+  Mode      : Wi-Fi (captures this machine's DNS queries)
   Press     : Ctrl+C to stop
-────────────────────────────────────────────────────
+────────────────────────────────────────────────────────
+
+  ★ new device  My MacBook  IP 192.168.1.32  MAC 7A:7F:22:36:CA:66
 
 TIME        DEVICE                CATEGORY      DOMAIN
 ────────────────────────────────────────────────────────────────────────
 22:50:21    My MacBook            ◈ SOCIAL      facebook.com
-22:50:22    iPhone                ♪ MUSIC       spclient.spotify.com
+22:50:22    My MacBook            ♪ MUSIC       spclient.spotify.com
 22:50:24    My MacBook            ◎ DEV         github.com
-22:50:30    Living Room TV        ▶ VIDEO       netflix.com
-22:50:42    iPhone                ◈ SOCIAL      instagram.com
+22:50:30    My MacBook            ◎ AI          api.anthropic.com
+22:50:42    My MacBook            ◈ SOCIAL      instagram.com
 ```
 
 Domains are auto-categorized with icons:
@@ -69,37 +71,27 @@ go build -o dnsw .
 sudo ./dnsw
 ```
 
-That's it. `sudo` is required to capture packets in promiscuous mode (seeing all devices, not just yours).
+That's it. `sudo` is required to capture network packets.
 
-### Flags
-
-| Flag             | Description                                                                |
-| ---------------- | -------------------------------------------------------------------------- |
-| `-i <interface>` | Use a specific network interface instead of auto-detecting                 |
-| `--list`         | Show all available network interfaces                                      |
-| `--no-dedupe`    | Show every DNS packet (by default, duplicate queries within 2s are merged) |
-
-### Choosing a different interface
-
-If auto-detection picks the wrong one, run `sudo ./dnsw --list` to see what's available:
-
-```
-Available interfaces:
-
-  en0           192.168.1.32
-  en1           192.168.1.45
-  bridge0       192.168.2.1
-```
-
-Then specify it with `-i`:
+### Commands
 
 ```bash
-./dnsw -i en1
+dnsw                         # start watching (default)
+dnsw watch                   # same as above
+dnsw watch -i en0            # use a specific network interface
+dnsw watch --no-dedupe       # show all DNS packets without merging
+
+dnsw devices list            # show all named devices
+dnsw devices set <ip> <name> # name a device
+dnsw devices remove <ip>     # remove a device name
+
+dnsw interfaces              # list available network interfaces
+dnsw config                  # show config file path and contents
 ```
 
 ### Device identification
 
-`dnsw` automatically identifies devices on your network using three methods (in order):
+`dnsw` identifies devices using three methods (in order):
 
 1. **Your names** from `~/.config/dnsw/devices.json` (highest priority)
 2. **Reverse DNS** (hostnames assigned by your router)
@@ -111,21 +103,30 @@ When a new device appears, you'll see a notice:
   ★ new device  Apple-1  IP 192.168.1.73  MAC AC:DE:48:00:11:22
 ```
 
-Devices are auto-named by manufacturer: `Apple-1`, `Samsung-2`, `Google-3`, etc. This covers most phones, tablets, smart TVs, game consoles, and IoT devices.
+Devices are auto-named by manufacturer: `Apple-1`, `Samsung-2`, `Google-3`, etc.
 
-To give devices custom names, edit `~/.config/dnsw/devices.json` (created automatically on first run):
+To give devices custom names:
 
-```json
-{
-  "192.168.1.32": "My MacBook",
-  "192.168.1.45": "iPhone",
-  "192.168.1.50": "Living Room TV"
-}
+```bash
+dnsw devices set 192.168.1.32 "My MacBook"
+dnsw devices set 192.168.1.45 "iPhone"
 ```
 
-> **Tip**: watch the new device notices to see which IPs appear, then map them in the config.
+Or edit `~/.config/dnsw/devices.json` directly.
 
-> **Note**: modern phones (iOS 14+, Android 10+) use randomized MAC addresses by default. These won't match any known vendor, so they'll show as the raw IP unless you name them in `devices.json`.
+> **Note**: modern phones (iOS 14+, Android 10+) use randomized MAC addresses by default. These won't match any known vendor, so they'll show as the raw IP unless you name them with `dnsw devices set`.
+
+## Wi-Fi limitation
+
+On **Wi-Fi**, `dnsw` can only see DNS queries from the machine it's running on. This is because Wi-Fi encrypts each device's traffic separately, so your computer physically can't see packets from your phone or TV.
+
+On a **wired network** (Ethernet), promiscuous mode can capture traffic from other devices on the same network segment.
+
+To see DNS queries from **all** devices on your network, you have a few options:
+
+- **Router DNS logs**: some routers (OpenWrt, pfSense, UniFi) can show DNS query logs directly
+- **Pi-hole**: runs as your network's DNS server and logs all queries with a web dashboard
+- **Run dnsw on your router**: if your router runs Linux (e.g. OpenWrt), you can run `dnsw` there where it can see all DNS traffic
 
 ## Why can't I see some websites?
 
@@ -155,12 +156,12 @@ macOS itself does not use DoH by default. System-level DNS (like `curl` in termi
 
 ## How it works
 
-`dnsw` puts your network interface into **promiscuous mode**, meaning it sees all packets on the local network, not just those addressed to your machine. It then filters for **UDP port 53** (standard DNS), parses the DNS query packets, and displays them in a formatted table.
+`dnsw` listens on your network interface for **UDP port 53** (standard DNS) traffic, parses the DNS query packets, and displays them in a formatted table.
 
 - Only **DNS queries** are shown (not responses)
 - `.local` and `.arpa` domains are filtered out (internal network lookups)
 - Devices are identified via config file, reverse DNS, or MAC vendor lookup
-- New devices are announced when first seen on the network
+- New devices are announced when first seen
 - Duplicate queries from the same device within 2 seconds are merged into one line
 
 For a beginner-friendly explanation of the networking concepts used in this project, see [NETWORK.md](NETWORK.md).

@@ -52,13 +52,33 @@ func detectDefaultInterface() string {
 	return ""
 }
 
+// isWifiInterface returns true if the interface is likely a Wi-Fi adapter.
+// On Wi-Fi, promiscuous mode can't capture other devices' traffic due to
+// per-device encryption, so we only see this machine's DNS queries.
+func isWifiInterface(iface string) bool {
+	// macOS: en0 is typically Wi-Fi, en1+ can be Ethernet or Thunderbolt
+	if runtime.GOOS == "darwin" {
+		out, err := exec.Command("networksetup", "-listallhardwareports").Output()
+		if err != nil {
+			return false
+		}
+		lines := strings.Split(string(out), "\n")
+		for i, line := range lines {
+			if strings.Contains(line, "Wi-Fi") && i+1 < len(lines) {
+				if strings.Contains(lines[i+1], iface) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	// Linux: wireless interfaces are typically wlan*
+	return strings.HasPrefix(iface, "wlan")
+}
+
 // startCapture opens the network interface and returns a packet source.
-// It sets promiscuous mode so we can see traffic from all devices on the LAN,
-// and applies a BPF filter to only receive DNS packets (UDP port 53).
+// Applies a BPF filter to only receive DNS packets (UDP port 53).
 func startCapture(iface string) (*pcap.Handle, *gopacket.PacketSource, error) {
-	// Open the network interface in promiscuous mode (the `true` param).
-	// Promiscuous mode means we see ALL packets on the network, not just
-	// packets addressed to our machine. This is how we see other devices.
 	handle, err := pcap.OpenLive(iface, snapshotLen, true, pcap.BlockForever)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open interface %s: %w", iface, err)
@@ -96,5 +116,6 @@ func listInterfaces() {
 			fmt.Printf("  %s%-12s%s  %s\n", bold, d.Name, reset, ip)
 		}
 	}
-	fmt.Printf("\nUsage:   sudo dnsw -i en0\n\n")
+	fmt.Printf("\nUsage:   sudo dnsw -i en0\n")
+	fmt.Printf("         sudo dnsw watch -i en0\n\n")
 }

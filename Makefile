@@ -6,7 +6,7 @@ build:
 	go build -o $(BINARY) .
 
 run: build
-	sudo ./$(BINARY)
+	go run main.go
 
 clean:
 	rm -f $(BINARY)

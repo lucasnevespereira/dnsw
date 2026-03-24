@@ -37,47 +37,31 @@ var (
 // vendorCounter tracks how many devices of each vendor we've seen.
 var vendorCounter = map[string]int{}
 
+// configPath returns the path to the devices.json config file.
+// Always uses ~/.config/dnsw regardless of platform.
+func configPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".config", "dnsw", "devices.json"), nil
+}
+
 // loadDeviceNames reads user-defined device names from ~/.config/dnsw/devices.json.
-// If the file doesn't exist, it creates a sample one so users know about it.
 func loadDeviceNames() {
-	configDir, err := os.UserConfigDir()
+	path, err := configPath()
 	if err != nil {
 		return
 	}
 
-	dir := filepath.Join(configDir, "dnsw")
-	path := filepath.Join(dir, "devices.json")
-
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			createSampleDevicesFile(dir, path)
-		}
 		return
 	}
 
 	if err := json.Unmarshal(data, &deviceNames); err != nil {
 		fmt.Printf("%sWarning:%s could not parse %s: %v\n", yellow, reset, path, err)
 	}
-}
-
-func createSampleDevicesFile(dir, path string) {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return
-	}
-
-	sample := map[string]string{
-		"192.168.1.32": "My MacBook",
-		"192.168.1.45": "iPhone",
-		"192.168.1.50": "Living Room TV",
-	}
-
-	data, err := json.MarshalIndent(sample, "", "  ")
-	if err != nil {
-		return
-	}
-
-	os.WriteFile(path, append(data, '\n'), 0644)
 }
 
 // registerMAC records the MAC address for a source IP.
